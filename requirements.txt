@@ -1,0 +1,19 @@
+# Versions installed in the research boundary environment.
+numpy==2.4.4
+scipy==1.17.1
+pandas==3.0.2
+pyyaml==6.0.3
+openai==2.30.0
+httpx==0.28.1
+tqdm==4.67.3
+huggingface-hub==0.36.2
+absl-py==2.4.0
+emoji==2.15.0
+immutabledict==4.3.1
+syllapy==0.7.2
+unicodedata2==17.0.1
+langdetect==1.0.9
+nltk==3.9.4
+pydantic==2.12.5
+requests==2.33.1
+tokenizers==0.22.2

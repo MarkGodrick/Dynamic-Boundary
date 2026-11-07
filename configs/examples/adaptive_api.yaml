@@ -1,0 +1,38 @@
+# CIF adaptive evaluation through an OpenAI-compatible endpoint.
+# Step 2 calibrates new items using the local reference panel.
+experiment:
+  name: null
+  output_dir: results/examples/adaptive
+models: []
+target_model:
+  type: api
+  base_url: http://localhost:8000/v1
+  api_key_env: TARGET_API_KEY
+  max_new_tokens: 2048
+  temperature: 1.0
+judge:
+  type: constraint
+adaptive:
+  estimator: eap
+  prior_mu: 0.0
+  prior_sigma: 3.0
+  n_quad: 21
+  pilot_quantiles:
+  - 0.1
+  - 0.3
+  - 0.5
+  - 0.7
+  - 0.9
+  N: 40
+  stab_eps: 0.02
+  stab_K: 3
+  tau_pad: 0.5
+  t_min: 2
+  hysteresis_L: 2
+  max_iters: 50
+  trial_seed: 42
+  concurrent: true
+step2:
+  K: 50
+  sgbs_config: configs/examples/search_api.yaml
+  panel_workers: 50

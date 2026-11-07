@@ -1,0 +1,60 @@
+experiment:
+  name: null
+  output_dir: "results/constrained_completion/smoke_test"
+  seed: 42
+
+# API-based target to keep smoke test cheap — no vLLM startup, no GPU
+models:
+  - "deepseek-chat"
+
+target_model:
+  type: "api"
+  api_key_env: "DEEPSEEK_API_TOKEN"
+  base_url: "https://api.deepseek.com"
+  max_new_tokens: 512
+  temperature: 1.0
+  max_retries: 3
+
+bare_requests:
+  data_path: "data/constrained_completion/bare_requests.jsonl"
+  limit: 20                                # only 20 items for smoke
+  category: "constrained_completion"
+
+skills:
+  dictionary_path: "skills/constrained_completion/skill_dictionary.json"
+  category: null
+  mis_size: 6                              # 6 compatible skills selectable
+
+search:
+  budget: 15                               # 15 SGBS iterations
+  target_edge_cases: 3                     # stop when 3 edge cases found
+  diminishing_returns: 15
+  batch_size: 1
+  max_compositions: 3                      # max times same (q, skills, fu) combo can be composed
+
+ucb:
+  prior_alpha: 0.3
+  prior_beta: 0.7
+  c: 1.0
+  skill_method: "thompson"
+
+skill_count:
+  max_count: 4
+  bare_request_bias: 0.0
+  lower_bound: 1                           # at least 1 constraint composed
+  top_k: 3
+  top_p: 0.9
+  alpha: 0.05
+  beta: 0.1
+
+composer:
+  type: "template"                         # rule-based template composer
+
+evaluator:
+  coarse_n: 5
+  fine_n: 5                                # total N=10 per item, cheap
+  coarse_range: [0.2, 0.8]
+  fine_range: [0.3, 0.7]
+
+judge:
+  type: "constraint"                       # rule-based dispatcher via instruction_bridge

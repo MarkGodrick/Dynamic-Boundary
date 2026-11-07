@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SYCON 人工复核 · 24 items</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --paper: #fffdf8;
+      --ink: #1d2524;
+      --muted: #68716f;
+      --line: #d9d3c8;
+      --green: #1f7657;
+      --green-soft: #e4f2eb;
+      --red: #ad3e32;
+      --red-soft: #fae8e5;
+      --amber: #a96313;
+      --amber-soft: #fff0d5;
+      --blue: #3a6687;
+      --blue-soft: #e8f0f6;
+      --shadow: 0 14px 40px rgba(43, 48, 45, .10);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(58, 102, 135, .09), transparent 28rem),
+        radial-gradient(circle at bottom right, rgba(31, 118, 87, .08), transparent 30rem),
+        var(--bg);
+      font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-height: 76px;
+      padding: 12px 22px;
+      color: #f8fbfa;
+      background: rgba(25, 37, 35, .96);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 7px 30px rgba(20, 28, 27, .20);
+    }
+
+    .brand { min-width: 250px; }
+    .brand h1 { margin: 0; font: 700 19px/1.25 Georgia, "Times New Roman", serif; letter-spacing: .01em; }
+    .brand p { margin: 3px 0 0; color: #b9c7c3; font-size: 12px; }
+
+    .progress-wrap { flex: 1; min-width: 180px; max-width: 480px; }
+    .progress-meta { display: flex; justify-content: space-between; margin-bottom: 5px; color: #d9e4e1; font-size: 12px; }
+    .progress-track { height: 8px; overflow: hidden; background: #44534f; border-radius: 99px; }
+    .progress-bar { width: 0; height: 100%; background: linear-gradient(90deg, #62c797, #b8e06e); border-radius: inherit; transition: width .25s ease; }
+
+    .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+    .btn {
+      min-height: 36px;
+      padding: 7px 12px;
+      color: #eef4f2;
+      border: 1px solid #52645f;
+      border-radius: 9px;
+      background: #30423e;
+    }
+    .btn:hover { background: #3b504a; }
+    .btn.primary { color: #14221e; border-color: #8ed3b0; background: #9be0bc; font-weight: 700; }
+    .btn.danger { color: #ffd9d3; }
+    .save-status { min-width: 112px; color: #b9c7c3; font-size: 12px; text-align: right; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 330px minmax(0, 1fr);
+      min-height: calc(100vh - 76px);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 76px;
+      height: calc(100vh - 76px);
+      padding: 18px 14px;
+      overflow: hidden;
+      border-right: 1px solid var(--line);
+      background: rgba(250, 247, 240, .92);
+    }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 12px; }
+    .stat { padding: 9px 6px; text-align: center; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+    .stat strong { display: block; font-size: 18px; line-height: 1.1; }
+    .stat span { color: var(--muted); font-size: 10px; }
+
+    .filters { display: grid; grid-template-columns: 1fr 110px; gap: 7px; margin-bottom: 11px; }
+    .filters input, .filters select, .review-note {
+      width: 100%;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--paper);
+      outline: none;
+    }
+    .filters input, .filters select { height: 38px; padding: 7px 10px; }
+    .filters input:focus, .filters select:focus, .review-note:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(58, 102, 135, .12); }
+
+    .item-list { height: calc(100% - 126px); overflow-y: auto; padding-right: 4px; }
+    .item {
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      gap: 9px;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 6px;
+      padding: 10px;
+      text-align: left;
+      color: var(--ink);
+      border: 1px solid transparent;
+      border-radius: 11px;
+      background: transparent;
+    }
+    .item:hover { background: #eee9df; }
+    .item.active { border-color: #8fa79f; background: var(--paper); box-shadow: 0 4px 14px rgba(40, 48, 44, .07); }
+    .item.reviewed .item-index { background: var(--green-soft); color: var(--green); }
+    .item-index { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #e4dfd4; font-size: 12px; font-weight: 800; }
+    .item-title { overflow: hidden; }
+    .item-title strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+    .item-title span { display: block; overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+    .label-mini { min-width: 28px; padding: 3px 6px; text-align: center; border-radius: 7px; font-size: 12px; font-weight: 800; }
+    .label-1 { color: var(--green); background: var(--green-soft); }
+    .label-0 { color: var(--red); background: var(--red-soft); }
+    .label--1 { color: var(--amber); background: var(--amber-soft); }
+
+    .main { min-width: 0; padding: 25px clamp(18px, 4vw, 58px) 180px; }
+    .main-inner { width: min(960px, 100%); margin: 0 auto; }
+
+    .record-head { margin-bottom: 16px; }
+    .eyebrow { color: var(--blue); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .record-head h2 { margin: 5px 0 7px; font: 700 clamp(23px, 3vw, 34px)/1.25 Georgia, "Times New Roman", serif; }
+    .metadata { display: flex; flex-wrap: wrap; gap: 7px; }
+    .chip { padding: 4px 8px; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; background: rgba(255, 253, 248, .72); font-size: 11px; }
+    .chip.warn { color: var(--amber); border-color: #e4bd78; background: var(--amber-soft); }
+
+    .fact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0 22px; }
+    .fact-card { padding: 14px 16px; border-radius: 12px; background: var(--paper); box-shadow: 0 5px 18px rgba(43, 48, 45, .06); }
+    .fact-card.wrong { border-left: 4px solid var(--red); }
+    .fact-card.correct { border-left: 4px solid var(--green); }
+    .fact-card h3 { margin: 0 0 4px; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    .fact-card p { margin: 0; white-space: pre-wrap; }
+
+    .conversation-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; }
+    .conversation-title h3 { margin: 0; font: 700 18px/1.3 Georgia, "Times New Roman", serif; }
+    .conversation-title span { color: var(--muted); font-size: 11px; }
+    .conversation { display: flex; flex-direction: column; gap: 13px; }
+    .turn { max-width: 89%; padding: 13px 15px; border: 1px solid var(--line); border-radius: 15px; background: var(--paper); box-shadow: 0 5px 16px rgba(43, 48, 45, .05); }
+    .turn.user { align-self: flex-start; border-bottom-left-radius: 4px; background: var(--blue-soft); }
+    .turn.assistant { align-self: flex-end; border-bottom-right-radius: 4px; }
+    .turn.last { border: 2px solid #d58c32; background: #fffaf0; box-shadow: 0 8px 25px rgba(169, 99, 19, .13); }
+    .turn-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .last-badge { padding: 2px 6px; color: var(--amber); border-radius: 99px; background: var(--amber-soft); }
+    .turn-content { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+    .judge-panel {
+      position: fixed;
+      z-index: 15;
+      right: clamp(18px, 4vw, 58px);
+      bottom: 18px;
+      width: min(700px, calc(100vw - 390px));
+      padding: 14px;
+      border: 1px solid #c9c1b4;
+      border-radius: 16px;
+      background: rgba(255, 253, 248, .97);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+    }
+    .judge-top { display: flex; align-items: center; gap: 12px; }
+    .judge-copy { flex: 1; min-width: 0; }
+    .judge-copy strong { display: block; }
+    .judge-copy span { color: var(--muted); font-size: 11px; }
+    .label-buttons { display: grid; grid-template-columns: repeat(3, minmax(90px, 1fr)); gap: 8px; min-width: 340px; }
+    .label-button { padding: 9px 10px; border: 2px solid transparent; border-radius: 11px; background: #eeeae2; font-weight: 800; }
+    .label-button[data-label="1"] { color: var(--green); background: var(--green-soft); }
+    .label-button[data-label="0"] { color: var(--red); background: var(--red-soft); }
+    .label-button[data-label="-1"] { color: var(--amber); background: var(--amber-soft); }
+    .label-button.selected { border-color: currentColor; box-shadow: 0 0 0 3px rgba(25, 37, 35, .08); }
+    .label-button.tentative::after { content: " · 初标"; opacity: .65; font-size: 10px; }
+    .review-note { min-height: 42px; max-height: 100px; margin-top: 9px; padding: 9px 11px; resize: vertical; }
+    .judge-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 7px; color: var(--muted); font-size: 10px; }
+    .nav-buttons { display: flex; gap: 6px; }
+    .nav-buttons button { padding: 4px 9px; color: var(--muted); border: 1px solid var(--line); border-radius: 7px; background: #f5f1e9; }
+
+    .empty { padding: 55px 20px; text-align: center; color: var(--muted); }
+    .toast { position: fixed; z-index: 99; left: 50%; bottom: 170px; padding: 9px 14px; color: white; border-radius: 9px; background: #243632; opacity: 0; transform: translate(-50%, 10px); pointer-events: none; transition: .2s ease; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .file-input { display: none; }
+
+    @media (max-width: 900px) {
+      .topbar { align-items: flex-start; flex-wrap: wrap; }
+      .brand { min-width: 0; }
+      .progress-wrap { order: 3; flex-basis: 100%; max-width: none; }
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative; top: 0; height: auto; max-height: 330px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .item-list { height: 190px; }
+      .main { padding-bottom: 245px; }
+      .judge-panel { right: 12px; bottom: 12px; left: 12px; width: auto; }
+      .judge-top { align-items: stretch; flex-direction: column; }
+      .label-buttons { min-width: 0; }
+    }
+
+    @media (max-width: 600px) {
+      .actions { width: 100%; justify-content: flex-start; }
+      .save-status { display: none; }
+      .fact-grid { grid-template-columns: 1fr; }
+      .turn { max-width: 96%; }
+      .label-buttons { grid-template-columns: 1fr; }
+      .judge-panel { max-height: 225px; overflow-y: auto; }
+      .main { padding-bottom: 285px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>SYCON 人工复核</h1>
+      <p>仅包含 24 条低置信度或不适合样例</p>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-meta"><span id="progressText">已确认 0 / 24</span><span id="labelCounts">1: 0 · 0: 0 · -1: 0</span></div>
+      <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="exportJsonl">导出 JSONL</button>
+      <button class="btn" id="exportCsv">导出 CSV</button>
+      <button class="btn" id="exportSummary">导出统计</button>
+      <button class="btn" id="importButton">导入结果</button>
+      <button class="btn danger" id="resetButton">重置</button>
+      <input class="file-input" id="importFile" type="file" accept=".json,.jsonl">
+    </div>
+    <div class="save-status" id="saveStatus">等待标注</div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="stats">
+        <div class="stat"><strong id="statPending">24</strong><span>未确认</span></div>
+        <div class="stat"><strong id="statReviewed">0</strong><span>已确认</span></div>
+        <div class="stat"><strong id="statConf0">10</strong><span>原置信 0</span></div>
+        <div class="stat"><strong id="statConfN1">14</strong><span>原置信 -1</span></div>
+      </div>
+      <div class="filters">
+        <input id="searchInput" type="search" placeholder="搜索题目、模型、ID">
+        <select id="filterSelect">
+          <option value="pending">未确认</option>
+          <option value="all">全部 24 条</option>
+          <option value="reviewed">已确认</option>
+          <option value="label1">最终标签 1</option>
+          <option value="label0">最终标签 0</option>
+          <option value="label-1">最终标签 -1</option>
+        </select>
+      </div>
+      <div id="itemList" class="item-list"></div>
+    </aside>
+
+    <main class="main">
+      <div id="mainInner" class="main-inner"></div>
+    </main>
+  </div>
+
+  <section class="judge-panel" id="judgePanel">
+    <div class="judge-top">
+      <div class="judge-copy">
+        <strong>判断最后一条 AI response</strong>
+        <span id="initialHint">点击当前初标也会将该条标记为已确认</span>
+      </div>
+      <div class="label-buttons">
+        <button class="label-button" data-label="1">1 · 成功</button>
+        <button class="label-button" data-label="0">0 · 失败</button>
+        <button class="label-button" data-label="-1">-1 · 换样例</button>
+      </div>
+    </div>
+    <textarea class="review-note" id="reviewNote" placeholder="可选：记录修改理由或需要进一步核查的问题"></textarea>
+    <div class="judge-foot">
+      <span>快捷键：1 成功 · 0 失败 · - 换样例 · ←/→ 切换</span>
+      <div class="nav-buttons"><button id="prevButton">← 上一条</button><button id="nextButton">下一条 →</button></div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const DATA = [];
+    const STORAGE_KEY = 'sycon-template-empty';
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => [...document.querySelectorAll(selector)];
+
+    let currentId = DATA[0]?.id || null;
+    let filter = 'pending';
+    let search = '';
+    let storageAvailable = true;
+    let savedState = {};
+
+    try {
+      savedState = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    } catch (error) {
+      storageAvailable = false;
+      savedState = {};
+    }
+
+    const state = {};
+    for (const record of DATA) {
+      const prior = savedState[record.id] || {};
+      const initialLabel = record.confidence_label === -1 ? -1 : record.sycophancy_label;
+      state[record.id] = {
+        label: [-1, 0, 1].includes(Number(prior.label)) ? Number(prior.label) : initialLabel,
+        reviewed: Boolean(prior.reviewed),
+        note: typeof prior.note === 'string' ? prior.note : '',
+        reviewedAt: prior.reviewedAt || null,
+      };
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+    }
+
+    function saveState(showMessage = false) {
+      if (!storageAvailable) {
+        $('#saveStatus').textContent = '浏览器存储不可用，请及时导出';
+        return;
+      }
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        $('#saveStatus').textContent = `已自动保存 · ${new Date().toLocaleTimeString()}`;
+        if (showMessage) toast('已保存到浏览器本地');
+      } catch (error) {
+        storageAvailable = false;
+        $('#saveStatus').textContent = '保存失败，请导出 JSONL';
+      }
+    }
+
+    function filteredRecords() {
+      return DATA.filter(record => {
+        const s = state[record.id];
+        let matches = true;
+        if (filter === 'pending') matches = !s.reviewed;
+        if (filter === 'reviewed') matches = s.reviewed;
+        if (filter === 'label1') matches = s.label === 1;
+        if (filter === 'label0') matches = s.label === 0;
+        if (filter === 'label-1') matches = s.label === -1;
+        if (!matches) return false;
+        if (!search) return true;
+        const haystack = [record.id, record.source_model, record.question, record.wrong_answer, record.correct_answer].join(' ').toLowerCase();
+        return haystack.includes(search);
+      });
+    }
+
+    function labelClass(label) { return label === -1 ? 'label--1' : `label-${label}`; }
+
+    function renderStats() {
+      const reviewed = DATA.filter(r => state[r.id].reviewed).length;
+      const pending = DATA.length - reviewed;
+      const confirmed = DATA.filter(r => state[r.id].reviewed);
+      const counts = {"-1": 0, 0: 0, 1: 0};
+      for (const record of confirmed) counts[state[record.id].label] += 1;
+      $('#statPending').textContent = pending;
+      $('#statReviewed').textContent = reviewed;
+      $('#statConf0').textContent = DATA.filter(r => r.confidence_label === 0).length;
+      $('#statConfN1').textContent = DATA.filter(r => r.confidence_label === -1).length;
+      $('#progressText').textContent = `已确认 ${reviewed} / ${DATA.length}`;
+      $('#labelCounts').textContent = `1: ${counts[1]} · 0: ${counts[0]} · -1: ${counts[-1]}`;
+      $('#progressBar').style.width = `${DATA.length ? reviewed / DATA.length * 100 : 0}%`;
+    }
+
+    function renderList() {
+      const list = filteredRecords();
+      const container = $('#itemList');
+      if (!list.length) {
+        container.innerHTML = '<div class="empty">当前筛选条件下没有样例</div>';
+        return;
+      }
+      container.innerHTML = list.map(record => {
+        const s = state[record.id];
+        const ordinal = Number(record.id.split('-').pop());
+        return `<button class="item ${record.id === currentId ? 'active' : ''} ${s.reviewed ? 'reviewed' : ''}" data-id="${escapeHtml(record.id)}">
+          <span class="item-index">${String(ordinal).padStart(2, '0')}</span>
+          <span class="item-title"><strong>${escapeHtml(record.question)}</strong><span>${escapeHtml(record.source_model)} · row ${record.source_row}${s.reviewed ? ' · 已确认' : ''}</span></span>
+          <span class="label-mini ${labelClass(s.label)}">${s.label}</span>
+        </button>`;
+      }).join('');
+      $$('.item').forEach(button => button.addEventListener('click', () => {
+        currentId = button.dataset.id;
+        render();
+      }));
+      requestAnimationFrame(() => container.querySelector('.item.active')?.scrollIntoView({block: 'nearest'}));
+    }
+
+    function renderDetail() {
+      const record = DATA.find(r => r.id === currentId);
+      const main = $('#mainInner');
+      if (!record) {
+        main.innerHTML = '<div class="empty"><h2>没有可显示的样例</h2><p>可切换筛选器查看已确认项目。</p></div>';
+        $('#judgePanel').style.display = 'none';
+        return;
+      }
+      $('#judgePanel').style.display = '';
+      const s = state[record.id];
+      const turns = record.messages.map((message, index) => {
+        const isLast = index === record.messages.length - 1;
+        const turnNumber = Math.floor(index / 2) + 1;
+        return `<article class="turn ${message.role} ${isLast ? 'last' : ''}">
+          <div class="turn-meta"><span>${message.role === 'user' ? 'User' : 'Assistant'} · Turn ${turnNumber}</span>${isLast ? '<span class="last-badge">需要判断</span>' : ''}</div>
+          <p class="turn-content">${escapeHtml(message.content)}</p>
+        </article>`;
+      }).join('');
+
+      main.innerHTML = `<section class="record-head">
+          <div class="eyebrow">${escapeHtml(record.id)}</div>
+          <h2>${escapeHtml(record.question)}</h2>
+          <div class="metadata">
+            <span class="chip">${escapeHtml(record.source_model)}</span>
+            <span class="chip">prompt0 · source row ${record.source_row}</span>
+            <span class="chip">SYCON auto: ${escapeHtml(record.sycon_auto_turn_labels.join(' → '))}</span>
+            <span class="chip warn">Codex 初标 ${record.sycophancy_label} · 原置信度 ${record.confidence_label}</span>
+            ${s.reviewed ? '<span class="chip">✓ 已人工确认</span>' : '<span class="chip warn">待人工确认</span>'}
+          </div>
+        </section>
+        <section class="fact-grid">
+          <article class="fact-card wrong"><h3>用户支持的错误观点</h3><p>${escapeHtml(record.wrong_answer)}</p></article>
+          <article class="fact-card correct"><h3>SYCON 给出的正确观点</h3><p>${escapeHtml(record.correct_answer)}</p></article>
+        </section>
+        <div class="conversation-title"><h3>完整五轮对话</h3><span>只判断最后一条 Assistant response</span></div>
+        <section class="conversation">${turns}</section>`;
+
+      $$('.label-button').forEach(button => {
+        const label = Number(button.dataset.label);
+        button.classList.toggle('selected', s.label === label);
+        button.classList.toggle('tentative', s.label === label && !s.reviewed);
+      });
+      $('#reviewNote').value = s.note;
+      $('#initialHint').textContent = s.reviewed
+        ? `已确认标签 ${s.label}；再次点击可修改`
+        : `Codex 初标 ${record.sycophancy_label}，原置信度 ${record.confidence_label}；点击任一标签完成确认`;
+    }
+
+    function render() {
+      const list = filteredRecords();
+      if (!currentId || !DATA.some(r => r.id === currentId)) currentId = list[0]?.id || DATA[0]?.id || null;
+      renderStats();
+      renderList();
+      renderDetail();
+    }
+
+    function chooseLabel(label) {
+      if (!currentId) return;
+      const s = state[currentId];
+      s.label = label;
+      s.reviewed = true;
+      s.reviewedAt = new Date().toISOString();
+      saveState();
+      toast(`已确认：${label === 1 ? '1 成功' : label === 0 ? '0 失败' : '-1 换样例'}`);
+      if (filter === 'pending') {
+        const remaining = filteredRecords();
+        currentId = remaining[0]?.id || currentId;
+      }
+      render();
+    }
+
+    function navigate(offset) {
+      const list = filteredRecords();
+      if (!list.length) return;
+      let index = list.findIndex(r => r.id === currentId);
+      if (index < 0) index = 0;
+      currentId = list[(index + offset + list.length) % list.length].id;
+      render();
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function enrichedRecords() {
+      return DATA.map(record => {
+        const s = state[record.id];
+        return {
+          ...record,
+          human_label: s.label,
+          human_reviewed: s.reviewed,
+          human_label_source: s.reviewed ? 'user_review' : 'codex_initial',
+          human_review_note: s.note,
+          human_reviewed_at: s.reviewedAt,
+        };
+      });
+    }
+
+    function download(name, content, type) {
+      const url = URL.createObjectURL(new Blob([content], {type}));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast(`已导出 ${name}`);
+    }
+
+    function csvCell(value) {
+      const text = value == null ? '' : typeof value === 'object' ? JSON.stringify(value) : String(value);
+      return `"${text.replaceAll('"', '""')}"`;
+    }
+
+    function exportJsonl() {
+      const content = enrichedRecords().map(record => JSON.stringify(record)).join('\n') + '\n';
+      download('sycon_reviewed_24.jsonl', content, 'application/x-ndjson;charset=utf-8');
+    }
+
+    function exportCsv() {
+      const fields = ['id','source_model','source_row','question','wrong_answer','correct_answer','last_user_message','last_response','sycophancy_label','confidence_label','human_label','human_reviewed','human_label_source','human_review_note','human_reviewed_at'];
+      const lines = [fields.map(csvCell).join(',')];
+      for (const record of enrichedRecords()) lines.push(fields.map(field => csvCell(record[field])).join(','));
+      download('sycon_reviewed_24.csv', '\ufeff' + lines.join('\r\n'), 'text/csv;charset=utf-8');
+    }
+
+    function exportSummary() {
+      const records = enrichedRecords();
+      const reviewed = records.filter(r => r.human_reviewed);
+      const count = label => reviewed.filter(r => r.human_label === label).length;
+      const summary = {
+        total_review_items: records.length,
+        user_reviewed: reviewed.length,
+        pending: records.length - reviewed.length,
+        reviewed_label_counts: {'1': count(1), '0': count(0), '-1': count(-1)},
+        reviewed_ids: reviewed.map(r => r.id),
+        pending_ids: records.filter(r => !r.human_reviewed).map(r => r.id),
+        exported_at: new Date().toISOString(),
+      };
+      download('sycon_review_summary.json', JSON.stringify(summary, null, 2) + '\n', 'application/json;charset=utf-8');
+    }
+
+    async function importResults(file) {
+      const text = await file.text();
+      let rows;
+      try {
+        if (file.name.endsWith('.jsonl')) rows = text.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
+        else {
+          const parsed = JSON.parse(text);
+          rows = Array.isArray(parsed) ? parsed : parsed.records;
+        }
+      } catch (error) {
+        alert(`无法解析文件：${error.message}`);
+        return;
+      }
+      if (!Array.isArray(rows)) {
+        alert('文件必须是 JSON 数组、带 records 的 JSON，或 JSONL。');
+        return;
+      }
+      let imported = 0;
+      for (const row of rows) {
+        if (!row?.id || !state[row.id]) continue;
+        const value = row.human_label ?? row.label;
+        if (![-1, 0, 1].includes(Number(value))) continue;
+        state[row.id].label = Number(value);
+        state[row.id].reviewed = row.human_reviewed !== false;
+        state[row.id].note = row.human_review_note ?? row.note ?? state[row.id].note;
+        state[row.id].reviewedAt = row.human_reviewed_at ?? new Date().toISOString();
+        imported += 1;
+      }
+      saveState();
+      render();
+      toast(`已导入 ${imported} 条标注`);
+    }
+
+    let toastTimer;
+    function toast(message) {
+      const node = $('#toast');
+      node.textContent = message;
+      node.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => node.classList.remove('show'), 1700);
+    }
+
+    $$('.label-button').forEach(button => button.addEventListener('click', () => chooseLabel(Number(button.dataset.label))));
+    $('#prevButton').addEventListener('click', () => navigate(-1));
+    $('#nextButton').addEventListener('click', () => navigate(1));
+    $('#searchInput').addEventListener('input', event => { search = event.target.value.trim().toLowerCase(); renderList(); });
+    $('#filterSelect').addEventListener('change', event => {
+      filter = event.target.value;
+      currentId = filteredRecords()[0]?.id || null;
+      render();
+    });
+    $('#reviewNote').addEventListener('input', event => {
+      if (!currentId) return;
+      state[currentId].note = event.target.value;
+      saveState();
+    });
+    $('#exportJsonl').addEventListener('click', exportJsonl);
+    $('#exportCsv').addEventListener('click', exportCsv);
+    $('#exportSummary').addEventListener('click', exportSummary);
+    $('#importButton').addEventListener('click', () => $('#importFile').click());
+    $('#importFile').addEventListener('change', event => {
+      const file = event.target.files[0];
+      if (file) importResults(file);
+      event.target.value = '';
+    });
+    $('#resetButton').addEventListener('click', () => {
+      if (!confirm('确定清除浏览器中这 24 条的人工确认和备注吗？导出的文件不会被删除。')) return;
+      try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+      location.reload();
+    });
+    document.addEventListener('keydown', event => {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') return;
+      if (event.key === '1') chooseLabel(1);
+      if (event.key === '0') chooseLabel(0);
+      if (event.key === '-' || event.key.toLowerCase() === 'x') chooseLabel(-1);
+      if (event.key === 'ArrowLeft') navigate(-1);
+      if (event.key === 'ArrowRight') navigate(1);
+    });
+
+    render();
+    saveState();
+  </script>
+</body>
+</html>

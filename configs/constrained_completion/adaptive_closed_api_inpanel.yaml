@@ -1,0 +1,58 @@
+# HiES W1 (extension): additional closed-weight CIF targets selected to fall
+# inside the reference-panel theta range, so Step 1 alone yields theta_hat and
+# no SGBS / panel GPU pass is required.
+#
+# Candidates are picked from the public IFEval leaderboard mid-band
+# (0.84-0.90), i.e. near or below the panel upper bound (Qwen2.5-72B, +0.956).
+
+experiment:
+  output_dir: "results/rebuttal/closed_models/constrained_completion"
+
+models:
+  - "openai/gpt-4.1-mini"
+  - "amazon/nova-lite-v1"
+  - "amazon/nova-micro-v1"
+  - "openai/gpt-4o-mini"
+
+target_model:
+  type: "external_api"
+  api_key_env: "OPENROUTER_API_KEY"
+  provider: "openrouter"
+  providers:
+    openrouter:
+      protocol: "openai_chat_completions"
+      base_url: "https://openrouter.ai/api/v1"
+      headers:
+        HTTP-Referer: "https://boundary-search.local"
+        X-Title: "Dynamic-Boundary rebuttal"
+  max_new_tokens: 2048
+  temperature: null
+  max_retries: 8
+  retry_delay: 1.0
+  max_concurrency: 15
+  timeout: 600
+
+judge:
+  type: "constraint"
+
+adaptive:
+  estimator: "eap"
+  prior_mu: 0.0
+  prior_sigma: 3.0
+  n_quad: 21
+  pilot_quantiles: [0.10, 0.30, 0.50, 0.70, 0.90]
+  N: 40
+  stab_eps: 0.02
+  stab_K: 3
+  tau_pad: 0.5
+  t_min: 2
+  hysteresis_L: 2
+  max_iters: 50
+  trial_seed: 42
+  concurrent: true
+  step1_workers: 8
+
+step2:
+  K: 20
+  sgbs_config: "configs/constrained_completion/search_constrained.yaml"
+  panel_workers: 50

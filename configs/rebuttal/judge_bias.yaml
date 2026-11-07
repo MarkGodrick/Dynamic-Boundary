@@ -1,0 +1,74 @@
+# Judge profiles for agreement and bias experiments.
+#
+# All profiles use the exact production category prompts imported from
+# judges.llm_judge.JUDGE_TEMPLATES. Requested model IDs, served model IDs,
+# prompt hashes, token counts, request time, raw outputs, and errors are saved.
+#
+# Prices are USD per 1M tokens and were checked on 2026-07-27. Recheck before
+# the formal run; the manifest preserves the values actually used.
+
+production_judge: "deepseek_v4_flash"
+
+judges:
+  deepseek_v4_flash:
+    model: "deepseek-v4-flash"
+    api_key_env: "DEEPSEEK_API_TOKEN"
+    base_url: "https://api.deepseek.com"
+    temperature: 0.0
+    max_tokens: 1024
+    max_retries: 8
+    retry_delay: 0.5
+    extra_body:
+      thinking:
+        type: "disabled"
+    prices_usd_per_million:
+      input: 0.14
+      input_cache_hit: 0.0028
+      input_cache_miss: 0.14
+      output: 0.28
+
+  openai_gpt_5_4_mini:
+    # Use OpenRouter's OpenAI model slug and pin the first-party provider.
+    # Reasoning is disabled to match the production DeepSeek judge.
+    model: "openai/gpt-5.4-mini"
+    api_key_env: "OPENROUTER_API_KEY"
+    base_url: "https://openrouter.ai/api/v1"
+    temperature: null
+    max_tokens: 1024
+    max_retries: 8
+    retry_delay: 0.5
+    extra_body:
+      reasoning:
+        effort: "none"
+      provider:
+        order:
+          - "OpenAI"
+        allow_fallbacks: false
+    prices_usd_per_million:
+      input: 0.75
+      input_cache_hit: 0.075
+      input_cache_miss: 0.75
+      output: 4.5
+
+  anthropic_claude_haiku_4_5:
+    # Anthropic has no direct credential in this environment, so use the
+    # OpenRouter model slug and pin the Anthropic provider without fallback.
+    model: "anthropic/claude-haiku-4.5"
+    api_key_env: "OPENROUTER_API_KEY"
+    base_url: "https://openrouter.ai/api/v1"
+    temperature: 0.0
+    max_tokens: 1024
+    max_retries: 8
+    retry_delay: 0.5
+    extra_body:
+      reasoning:
+        effort: "none"
+      provider:
+        order:
+          - "Anthropic"
+        allow_fallbacks: false
+    prices_usd_per_million:
+      input: 1.0
+      input_cache_hit: 0.1
+      input_cache_miss: 1.0
+      output: 5.0

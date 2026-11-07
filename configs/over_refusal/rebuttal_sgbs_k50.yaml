@@ -1,0 +1,82 @@
+# SGBS arm of the paired selector comparison.
+#
+# Cell: over_refusal x mistralai/Mistral-Small-3.1-24B-Instruct-2503.
+# Pair with rebuttal_uniform_k50.yaml. Apart from selector identity, the two
+# arms differ only where required to run concurrently: output directory,
+# CUDA devices, and vLLM port.
+#
+# Mistral-Small-24B is TP=2 in core/panel_config.py, so each arm needs two
+# A40s. Use non-overlapping cuda_devices for concurrent paired runs.
+experiment:
+  name: null
+  output_dir: "results/rebuttal/sgbs_vs_uniform/over_refusal/sgbs_k50"
+  seed: 42
+
+models:
+  - "mistralai/Mistral-Small-3.1-24B-Instruct-2503"
+
+target_model:
+  type: "vllm"
+  max_new_tokens: 3072
+  temperature: 1.0
+  cuda_devices: "4,5"
+  port: 8500
+  max_model_len: 8192
+  # conda_env, dtype, gpu_memory_utilization, and extra_args are supplied by
+  # core/panel_config.py, including enforce-eager and TP=2.
+
+bare_requests:
+  data_path: "data/over_refusal/bare_requests.jsonl"
+  limit: null
+  category: "over_refusal"
+
+skills:
+  dictionary_path: "skills/over_refusal/skill_dictionary.json"
+  category: null
+  mis_size: 8
+
+search:
+  selector: "thompson"
+  budget: 10000
+  target_edge_cases: 50
+  diminishing_returns: 10000
+  batch_size: 4
+  max_compositions: 3
+
+ucb:
+  prior_alpha: 0.3
+  prior_beta: 0.7
+  c: 1.0
+  skill_method: "thompson"
+
+skill_count:
+  max_count: 4
+  bare_request_bias: 3.0
+  lower_bound: 0
+  top_k: 3
+  top_p: 0.9
+  alpha: 0.05
+  beta: 0.1
+
+composer:
+  type: "llm"
+  model: "deepseek-v4-flash"
+  api_key_env: "DEEPSEEK_API_TOKEN"
+  base_url: "https://api.deepseek.com"
+  max_retries: 5
+  temperature: 0.7
+  max_tokens: 2048
+
+evaluator:
+  coarse_n: 15
+  fine_n: 25
+  coarse_range: [0.3, 0.7]
+  fine_range: [0.4, 0.6]
+
+judge:
+  type: "llm_api"
+  model: "deepseek-v4-flash"
+  api_key_env: "DEEPSEEK_API_TOKEN"
+  base_url: "https://api.deepseek.com"
+  max_retries: 5
+  temperature: 0.0

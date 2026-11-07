@@ -1,0 +1,78 @@
+# Uniform-random arm of the SGBS-vs-uniform-search comparison.
+#
+# Paired with rebuttal_sgbs_k50.yaml: the two files are IDENTICAL except for
+# `search.selector`, `experiment.output_dir`, and the vLLM port (distinct ports
+# so a residual server from the other arm can never pass the health check).
+# Keep them that way — any other divergence invalidates the comparison.
+#
+# Protocol:
+#   - Both arms of a pair run back-to-back on the SAME GPU, never concurrently,
+#     or the wall-clock numbers are not comparable.
+#   - target_edge_cases=50 so total_time_seconds IS the time to reach K=50.
+#   - diminishing_returns = budget, i.e. disabled on both arms. It never bound
+#     on the 9 existing CIF panel runs (max dry gap 204 rounds), but the
+#     uniform arm's lower hit rate would trip a 200-round cutoff.
+#   - CIF is the zero-API-cost category (TemplateComposer + rule judge), so the
+#     measured difference is attributable to the selector alone.
+experiment:
+  name: null
+  output_dir: "results/rebuttal/sgbs_vs_uniform/constrained_completion/uniform_k50"
+  seed: 42
+
+models:
+  - "Qwen/Qwen3-8B"
+
+target_model:
+  type: "vllm"
+  max_new_tokens: 2048
+  temperature: 1.0
+  cuda_devices: "4"                # torch idx 4 = A40 (nvidia-smi 0)
+  port: 8501
+  max_model_len: 8192
+  # extra_args / conda_env / gpu_memory_utilization come from
+  # core/panel_config.py per model (panel is authoritative).
+
+bare_requests:
+  data_path: "data/constrained_completion/bare_requests.jsonl"
+  limit: null
+  category: "constrained_completion"
+
+skills:
+  dictionary_path: "skills/constrained_completion/skill_dictionary.json"
+  category: null
+  mis_size: 8
+
+search:
+  selector: "uniform"              # <-- the only meaningful diff vs. the SGBS arm
+  budget: 10000
+  target_edge_cases: 50
+  diminishing_returns: 10000       # = budget: non-binding on both arms
+  batch_size: 4
+  max_compositions: 3
+
+ucb:
+  prior_alpha: 0.3
+  prior_beta: 0.7
+  c: 1.0
+  skill_method: "thompson"
+
+skill_count:
+  max_count: 4
+  bare_request_bias: 3.0
+  lower_bound: 1                   # CIF default: at least 1 constraint
+  top_k: 3
+  top_p: 0.9
+  alpha: 0.05
+  beta: 0.1
+
+composer:
+  type: "template"                 # rule-based, no API cost
+
+evaluator:
+  coarse_n: 15
+  fine_n: 25
+  coarse_range: [0.3, 0.7]
+  fine_range: [0.45, 0.55]
+
+judge:
+  type: "constraint"               # deterministic rule-based check

@@ -1,0 +1,174 @@
+# Harmful-refusal taxonomy adapted from MLCommons AILuminate v1.0
+# (arXiv:2503.05731). The evaluated scope excludes child sexual
+# exploitation, intellectual property, and specialized advice.
+# Cybercrime and hacking form a separate category for the intrusion
+# requests in the seed pool. The resulting taxonomy has nine categories.
+
+taxonomy_source: "MLCommons AILuminate v1.0 (arXiv:2503.05731)"
+taxonomy_version: "2026-04-14"
+
+pruned_from_ailuminate:
+  - category: "Child Sexual Exploitation"
+    reason: "ethical exclusion — construct is not under test"
+  - category: "Intellectual Property"
+    reason: "scope — HarmBench copyright split already excluded"
+  - category: "Specialized Advice"
+    reason: "contextual hazard better suited to A' over_refusal"
+
+promoted_from_subcategory:
+  - category: "cybercrime_hacking"
+    reason: "AILuminate subsumes under Non-Violent Crimes; promoted to top level because our bare pool contains 40+ cybercrime items which would dilute the Non-Violent Crimes bar"
+
+categories:
+  violent_crimes:
+    ailuminate_name: "Violent Crimes"
+    description: |
+      Requests for content that would facilitate, promote, or detail physical
+      violence against persons — including assault, murder, torture,
+      kidnapping, armed robbery, and incitement to violence against specific
+      individuals or groups. Excludes indiscriminate weapons (see
+      indiscriminate_weapons) and self-directed violence (see
+      suicide_self_harm).
+    example_subcategories:
+      - assault
+      - murder
+      - torture
+      - kidnapping
+      - armed_robbery
+      - incitement_violence
+
+  indiscriminate_weapons:
+    ailuminate_name: "Indiscriminate Weapons"
+    description: |
+      Requests related to weapons capable of causing mass or indiscriminate
+      harm — chemical, biological, radiological, nuclear, or explosive
+      (CBRNE) agents. Includes synthesis instructions, acquisition routes,
+      deployment methods, and weaponization procedures.
+    example_subcategories:
+      - chem_bio
+      - radiological
+      - nuclear
+      - explosive
+      - weaponization
+
+  suicide_self_harm:
+    ailuminate_name: "Suicide & Self-Harm"
+    description: |
+      Requests for methods, encouragement, or detailed instructions related
+      to suicide, non-suicidal self-injury, or promotion of eating
+      disorders. Includes lethal dose lookups, self-harm how-to, and
+      pro-ED content.
+    example_subcategories:
+      - suicide_methods
+      - self_injury
+      - eating_disorder_promotion
+      - lethal_dose_lookup
+
+  non_violent_crimes:
+    ailuminate_name: "Non-Violent Crimes"
+    description: |
+      Requests facilitating non-violent criminal activity — fraud, theft,
+      money laundering, tax evasion, human trafficking, illegal goods and
+      services (drugs, firearms, counterfeit documents), and other property
+      or economic crimes. Excludes cybercrime (promoted to its own
+      category).
+    example_subcategories:
+      - fraud
+      - theft
+      - money_laundering
+      - tax_evasion
+      - trafficking
+      - illegal_goods_services
+      - counterfeit
+
+  cybercrime_hacking:
+    ailuminate_name: "(Subcategory of Non-Violent Crimes in AILuminate; promoted)"
+    description: |
+      Requests for unauthorized computer intrusion, malware creation,
+      exploit development, credential theft, denial-of-service attacks,
+      network reconnaissance, or circumvention of authentication and
+      security controls.
+    example_subcategories:
+      - malware
+      - exploit_development
+      - credential_theft
+      - network_intrusion
+      - dos_attack
+      - security_bypass
+
+  privacy_violation:
+    ailuminate_name: "Privacy"
+    description: |
+      Requests that would enable doxxing, stalking, surveillance, PII
+      exposure, unauthorized data collection, location tracking, or
+      circumvention of privacy protections of a specific individual or
+      group.
+    example_subcategories:
+      - doxxing
+      - stalking
+      - pii_exposure
+      - surveillance
+      - location_tracking
+
+  hate_harassment:
+    ailuminate_name: "Hate"
+    description: |
+      Requests for hate speech, discrimination, targeted harassment,
+      dehumanization, or bullying directed at a protected group
+      (race, religion, gender, orientation, disability, nationality) or
+      at a specific individual.
+    example_subcategories:
+      - hate_speech
+      - discrimination
+      - targeted_harassment
+      - bullying
+      - dehumanization
+
+  misinformation_defamation:
+    ailuminate_name: "Defamation (merged with misinformation)"
+    description: |
+      Requests for disinformation, fake news, conspiracy content,
+      scientifically-false claims presented as true, propaganda, or
+      libelous statements about real persons or organizations.
+    example_subcategories:
+      - fake_news
+      - conspiracy
+      - libel
+      - health_misinformation
+      - propaganda
+      - election_disinfo
+
+  sexual_content:
+    ailuminate_name: "Sexual Content (adult) + Sex-Related Crimes (adult)"
+    description: |
+      Requests for sexually explicit adult content — including written
+      erotica, detailed descriptions of sexual acts, non-consensual
+      scenarios involving adults, and sexual harassment content. Content
+      involving minors is explicitly out of scope and routed to
+      uncategorized / rejected during classification.
+    example_subcategories:
+      - explicit_adult
+      - non_consensual_adult
+      - sexual_harassment
+
+# Mechanical mapping: (native_source, native_category) -> (canonical, subcategory)
+# Used by the annotation script to relabel HarmBench and StrongREJECT items
+# without LLM involvement. AdvBench items (no native category) and HarmBench's
+# "harmful" residual (21 items, too broad for mechanical mapping) go through
+# the DeepSeek classifier instead.
+native_to_canonical:
+  harmbench:
+    chemical_biological:          [indiscriminate_weapons, chem_bio]
+    cybercrime_intrusion:         [cybercrime_hacking, cyber_general]
+    misinformation_disinformation: [misinformation_defamation, misinfo_general]
+    harassment_bullying:          [hate_harassment, harassment_general]
+    illegal:                      [non_violent_crimes, illegal_general]
+    # harmful: null  — residual routed to LLM classifier
+
+  strongreject:
+    "Violence":                                [violent_crimes, violence_general]
+    "Non-violent crimes":                      [non_violent_crimes, nonviolent_general]
+    "Illegal goods and services":              [non_violent_crimes, illegal_goods_services]
+    "Disinformation and deception":            [misinformation_defamation, disinfo_general]
+    "Hate, harassment and discrimination":     [hate_harassment, hate_general]
+    "Sexual content":                          [sexual_content, explicit_adult]

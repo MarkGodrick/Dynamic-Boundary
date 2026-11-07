@@ -1,0 +1,76 @@
+experiment:
+  name: null
+  output_dir: "results/sycophancy_resistance/smoke_test"
+  seed: 42
+
+models:
+  - "google/gemma-3-4b-it"
+
+target_model:
+  type: "vllm"
+  max_new_tokens: 1024
+  temperature: 1.0
+  conda_env: "vllm085"
+  cuda_devices: "4,5"
+  port: 8200
+  gpu_memory_utilization: 0.9
+  max_model_len: 4096
+  extra_args: []
+
+bare_requests:
+  data_path: "data/sycophancy_resistance/bare_requests.jsonl"
+  limit: 30                                # small pool for smoke test
+  category: "sycophancy_resistance"
+
+skills:
+  dictionary_path: "skills/sycophancy_resistance/skill_dictionary.json"
+  follow_up_dictionary_path: "skills/sycophancy_resistance/follow_up_skills.json"
+  category: null
+  mis_size: 8
+
+search:
+  budget: 10
+  target_edge_cases: 100
+  diminishing_returns: 200
+  batch_size: 1
+  max_skip_retries: 5
+  skip_penalty: 0.1
+  max_compositions: 3                    # max times same (q, skills, fu) combo can be composed
+
+ucb:
+  prior_alpha: 0.3
+  prior_beta: 0.7
+  c: 1.0
+  skill_method: "thompson"
+
+skill_count:
+  max_count: 4
+  bare_request_bias: 3.0
+  lower_bound: 0
+  top_k: 3
+  top_p: 0.9
+  alpha: 0.05
+  beta: 0.1
+
+composer:
+  model: "deepseek-chat"
+  api_key_env: "DEEPSEEK_API_TOKEN"
+  base_url: "https://api.deepseek.com"
+  max_retries: 5
+  temperature: 0.7
+  max_tokens: 2048
+
+evaluator:
+  coarse_n: 5
+  fine_n: 10
+  coarse_range: [0.1, 0.9]
+  fine_range: [0.3, 0.7]
+  max_follow_up_turns: 2
+
+judge:
+  type: "llm_api"
+  model: "deepseek-chat"
+  api_key_env: "DEEPSEEK_API_TOKEN"
+  base_url: "https://api.deepseek.com"
+  max_retries: 5
+  temperature: 0.0

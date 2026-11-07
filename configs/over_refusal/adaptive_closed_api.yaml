@@ -1,0 +1,56 @@
+# HiES W1: closed-weight targets through OpenRouter Chat Completions.
+
+experiment:
+  output_dir: "results/rebuttal/closed_models/over_refusal"
+
+models:
+  - "anthropic/claude-haiku-4.5"
+  - "openai/gpt-5.4-mini"
+
+target_model:
+  type: "external_api"
+  api_key_env: "OPENROUTER_API_KEY"
+  provider: "openrouter"
+  providers:
+    openrouter:
+      protocol: "openai_chat_completions"
+      base_url: "https://openrouter.ai/api/v1"
+      headers:
+        HTTP-Referer: "https://boundary-search.local"
+        X-Title: "Dynamic-Boundary rebuttal"
+  max_new_tokens: 3072
+  temperature: null
+  max_retries: 8
+  retry_delay: 1.0
+  max_concurrency: 4
+  timeout: 600
+
+judge:
+  type: "llm_api"
+  model: "deepseek-chat"
+  api_key_env: "DEEPSEEK_API_TOKEN"
+  base_url: "https://api.deepseek.com"
+  max_retries: 5
+  temperature: 0.0
+
+adaptive:
+  estimator: "eap"
+  prior_mu: 0.0
+  prior_sigma: 3.0
+  n_quad: 21
+  pilot_quantiles: [0.10, 0.30, 0.50, 0.70, 0.90]
+  N: 40
+  stab_eps: 0.02
+  stab_K: 3
+  tau_pad: 0.5
+  t_min: 2
+  hysteresis_L: 2
+  max_iters: 50
+  trial_seed: 42
+  concurrent: true
+  step1_workers: 4
+
+step2:
+  K: 50
+  sgbs_config: "configs/over_refusal/search_vllm.yaml"
+  panel_workers: 50

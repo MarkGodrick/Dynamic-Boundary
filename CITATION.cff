@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use Dynamic-Boundary, please cite the accompanying paper."
+title: "Dynamic-Boundary"
+type: software
+version: "1.1.0-alo"
+license: MIT
+authors:
+  - family-names: Wang
+    given-names: Haoxiang
+  - family-names: Yu
+    given-names: Da
+  - family-names: Zhang
+    given-names: Huishuai
+preferred-citation:
+  type: article
+  title: "Beyond Fixed Benchmarks and Worst-Case Attacks: Dynamic Boundary Evaluation for Language Models"
+  authors:
+    - family-names: Wang
+      given-names: Haoxiang
+    - family-names: Yu
+      given-names: Da
+    - family-names: Zhang
+      given-names: Huishuai
+  year: 2026
+  journal: arXiv
+  doi: 10.48550/arXiv.2605.06213
+  url: https://arxiv.org/abs/2605.06213

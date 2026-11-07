@@ -1,0 +1,46 @@
+# Adaptive evaluation with ALO anchors and K=50 augmentation.
+experiment:
+  name: null
+  output_dir: results/adaptive/constrained_completion
+models:
+- deepseek-ai/DeepSeek-R1-Distill-Llama-70B
+- microsoft/phi-4
+- allenai/Olmo-3-7B-Instruct
+- deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
+- microsoft/Phi-4-reasoning-plus
+- ibm-granite/granite-4.1-8b
+- allenai/Olmo-3.1-32B-Instruct
+- tiiuae/Falcon-H1R-7B
+target_model:
+  type: vllm
+  max_new_tokens: 2048
+  temperature: 1.0
+  port: 8100
+  max_model_len: 8192
+  cuda_devices: 0,1
+judge:
+  type: constraint
+adaptive:
+  estimator: eap
+  prior_mu: 0.0
+  prior_sigma: 3.0
+  n_quad: 21
+  pilot_quantiles:
+  - 0.1
+  - 0.3
+  - 0.5
+  - 0.7
+  - 0.9
+  N: 40
+  stab_eps: 0.02
+  stab_K: 3
+  tau_pad: 0.5
+  t_min: 2
+  hysteresis_L: 2
+  max_iters: 50
+  trial_seed: 42
+  concurrent: true
+step2:
+  K: 50
+  sgbs_config: configs/constrained_completion/search_constrained.yaml
+  panel_workers: 50

@@ -1,0 +1,75 @@
+# SGBS run for tiiuae/Falcon-H1R-7B on category constrained_completion,
+# attaching to an EXISTING vLLM server on port 8400 (manually launched, shared
+# with the OR/SR Falcon attach configs). type="api" mode bypasses the vLLM
+# auto-launcher; multiple SGBS processes can hit the same server in parallel
+# through the vLLM scheduler.
+#
+# Falcon-H1R-7B is OUT-weak in CIF (theta_full=-1.269 vs panel min -1.25):
+# the model fails to satisfy constraints. CIF already uses lower_bound=1 by
+# default (no bare requests — at least one constraint must be applied), so
+# the OUT-weak setting reduces to keeping that default. composer="template"
+# (rule-based, no API cost) and judge="constraint" (deterministic check).
+#
+# One-off: delete this file after the run; production SGBS config is
+# search_constrained.yaml.
+
+experiment:
+  name: null
+  output_dir: "results/constrained_completion/edge_case_validation"
+  seed: 42
+
+models:
+  - "tiiuae/Falcon-H1R-7B"
+
+target_model:
+  type: "api"                      # attach to existing vLLM server
+  name: "tiiuae/Falcon-H1R-7B"
+  base_url: "http://localhost:8100/v1"
+  api_key_env: "VLLM_API_KEY"
+  max_new_tokens: 8192
+  temperature: 1.0
+  max_retries: 5
+
+bare_requests:
+  data_path: "data/constrained_completion/bare_requests.jsonl"
+  limit: null
+  category: "constrained_completion"
+
+skills:
+  dictionary_path: "skills/constrained_completion/skill_dictionary.json"
+  category: null
+  mis_size: 8
+
+search:
+  budget: 10000
+  target_edge_cases: 50            # match step2 K=50 in adaptive.yaml
+  diminishing_returns: 200
+  batch_size: 4
+  max_compositions: 3
+
+ucb:
+  prior_alpha: 0.3
+  prior_beta: 0.7
+  c: 1.0
+  skill_method: "thompson"
+
+skill_count:
+  max_count: 4
+  bare_request_bias: 3.0
+  lower_bound: 1                   # CIF default: at least 1 constraint
+  top_k: 3
+  top_p: 0.9
+  alpha: 0.05
+  beta: 0.1
+
+composer:
+  type: "template"                 # rule-based constraint composer (no API)
+
+evaluator:
+  coarse_n: 15
+  fine_n: 25
+  coarse_range: [0.3, 0.7]
+  fine_range: [0.45, 0.55]
+
+judge:
+  type: "constraint"               # deterministic rule-based check
